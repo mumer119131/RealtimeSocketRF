@@ -3,37 +3,50 @@ import reactLogo from './assets/react.svg'
 import viteLogo from '/vite.svg'
 import './App.css'
 import io from 'socket.io-client';
-
+import {socket} from './socket.js';
 
 
 function App() {
-  const socket = io('http://127.0.0.1:5000'); // Replace with your server URL
   const [count, setCount] = useState(0)
+  const [isConnected, setIsConnected] = useState(socket.connected);
+  const [fooEvents, setFooEvents] = useState([]);
   const [text, setText] = useState('');
-
   useEffect(() => {
-    socket.on('connect', () => {
-      console.log('Connected to the server');
-    });
+    function onConnect() {
+      setIsConnected(true);
+    }
 
+    function onDisconnect() {
+      setIsConnected(false);
+    }
+
+    function onFooEvent(value) {
+      setFooEvents(previous => [...previous, value]);
+    }
+
+    socket.on('connect', onConnect);
+    socket.on('disconnect', onDisconnect);
     socket.on('server_message', (data) => {
-      console.log(data)
+      console.log(data);
       setText(data.data);
     });
 
     return () => {
-      socket.disconnect();
+      socket.off('connect', onConnect);
+      socket.off('disconnect', onDisconnect);
+      socket.off('foo', onFooEvent);
     };
   }, []);
 
-  const handleChange = (e) => {
-    console.log('Sending message to the server')
-    const newText = e.target.value;
-    setText(newText);
-    socket.emit('client_message', { text: newText });
-  };
+  function handleChange(event) {
+    setText(event.target.value);
+    if (event.target.value.charAt(event.target.value.length - 1) === ' ') {
+      socket.emit('client_message', {text: event.target.value});
+    }
+  }
   return (
     <>
+      <p>{isConnected ? 'Connected' : 'Disconnected'}</p>
       <textarea
         value={text}
         onChange={handleChange}

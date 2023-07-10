@@ -12,11 +12,12 @@ def index():
 @socketio.on('connect')
 def handle_connect():
     print('Client connected')
-    emit('server_message', {'data': 'Connected to the server'})
+    emit('server_message', {'data': text})
 
 @socketio.on('client_message')
 def handle_message(data):
     print('received message: ' + data['text'])
+    text = data['text']
     emit('server_message', {'data': data['text']}, broadcast=True)
 
 if __name__ == '__main__':
